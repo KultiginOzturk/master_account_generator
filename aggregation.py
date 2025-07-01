@@ -1,5 +1,8 @@
 # master_audit_generator/aggregation.py
 import pandas as pd
+from logger import DQLogger
+
+logger = DQLogger(__name__)
 
 class UnionFind:
     def __init__(self, n):
@@ -48,6 +51,8 @@ def aggregate_groups(df_pairwise: pd.DataFrame, original_df: pd.DataFrame, get_n
         ``(aggregated, client_input)`` data frames.
     """
 
+    logger.info("Aggregating pairwise groups")
+
     cid_col = "Customer ID" if "Customer ID" in original_df.columns else "CUSTOMER_ID"
 
     all_ids = set(df_pairwise[cid_col]) | set(df_pairwise["master account id"])
@@ -73,6 +78,8 @@ def aggregate_groups(df_pairwise: pd.DataFrame, original_df: pd.DataFrame, get_n
     for cid, idx in index_by_id.items():
         root = uf.find(idx)
         groups.setdefault(root, []).append(cid)
+
+    logger.info("Found groups", total=len(groups))
 
     aggregated_rows = []
     group_id_to_reasonset = {}
@@ -116,4 +123,9 @@ def aggregate_groups(df_pairwise: pd.DataFrame, original_df: pd.DataFrame, get_n
         client_rows.append(dict(row))
 
     client_input = pd.DataFrame(client_rows).sort_values(["Group ID", cid_col])
+    logger.info(
+        "Aggregation complete",
+        aggregated_rows=len(aggregated),
+        client_rows=len(client_input),
+    )
     return aggregated, client_input

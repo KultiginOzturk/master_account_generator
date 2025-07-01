@@ -2,6 +2,9 @@
 import pandas as pd
 import numpy as np
 from utils import clean_value, sample_pairs, is_baton, DUMMY_EMAILS, DUMMY_PHONES
+from logger import DQLogger
+
+logger = DQLogger(__name__)
 
 MAX_PAIRS_PER_GROUP = 1000
 
@@ -76,7 +79,9 @@ def add_pairwise_matches(
     results: list[dict],
     cid_col: str,
 ) -> None:
+    logger.info("Matching by field", field=field)
     sub = df[df[field].notnull()]
+    before = len(results)
     for key, group in sub.groupby(field):
         idxs = group.index.tolist()
         if len(idxs) < 2:
@@ -93,8 +98,10 @@ def add_pairwise_matches(
                     }
                 )
                 results.append(rec)
+    logger.info("Pairs added", reason=reason_label, count=len(results) - before)
 
 def generate_pairwise(df: pd.DataFrame) -> pd.DataFrame:
+    logger.info("Generating pairwise matches", rows=len(df))
     df = df.copy().reset_index(drop=True)
 
     # remove rows with Baton in key fields and clean dummy emails/phones
@@ -114,6 +121,8 @@ def generate_pairwise(df: pd.DataFrame) -> pd.DataFrame:
         skip_mask.append(False)
     if skip_mask:
         df["skip"] = skip_mask
+        removed = len(df) - df[~df["skip"]].shape[0]
+        logger.info("Skipping rows", removed=removed)
         df = df[~df["skip"]].copy().reset_index(drop=True)
 
     df["any_email"] = df.apply(unify_email, axis=1)
@@ -145,4 +154,6 @@ def generate_pairwise(df: pd.DataFrame) -> pd.DataFrame:
     pw = pd.DataFrame(records)
     pw.drop_duplicates(subset=[cid_col, "Reason", "master account id", "Confidence"], inplace=True)
     cols = [c for c in pw.columns if c not in ("Reason", "master account id", "Confidence")] + ["Reason", "master account id", "Confidence"]
-    return pw[cols].sort_values(["master account id", cid_col]).reset_index(drop=True)
+    result = pw[cols].sort_values(["master account id", cid_col]).reset_index(drop=True)
+    logger.info("Pairwise generation complete", pairs=len(result))
+    return result
