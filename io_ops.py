@@ -4,6 +4,14 @@ import pandas as pd
 from google.cloud import bigquery
 import files
 
+
+def remove_timezones(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove timezone information from datetime columns."""
+    tz_cols = df.select_dtypes(include=["datetimetz"]).columns
+    for col in tz_cols:
+        df[col] = df[col].dt.tz_localize(None)
+    return df
+
 def read_customer_table(
     project: str,
     dataset: str,
@@ -41,6 +49,10 @@ def write_sheets(pairwise, aggregated, client_input, to_bigquery: bool, project:
         aggregated.to_gbq("master_audit.aggregated", project_id=project, if_exists="replace")
         client_input.to_gbq("master_audit.client_input", project_id=project, if_exists="replace")
     else:
+        pairwise = remove_timezones(pairwise.copy())
+        aggregated = remove_timezones(aggregated.copy())
+        client_input = remove_timezones(client_input.copy())
+
         with pd.ExcelWriter(files.MASTER_AUDIT, engine="openpyxl") as w:
             pairwise.to_excel(w, sheet_name="full masterAccount match", index=False)
             aggregated.to_excel(w, sheet_name="masterAccount match aggregated", index=False)

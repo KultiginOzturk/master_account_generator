@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+ENV/
+venv/
+
+# Editor directories and files
+.idea/
+.vscode/
+
+# MacOS files
+.DS_Store
+
+# Local environment
+.env
+
+# Output files
+master_audit.xlsx
