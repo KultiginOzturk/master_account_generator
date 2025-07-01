@@ -57,3 +57,71 @@ def write_sheets(pairwise, aggregated, client_input, to_bigquery: bool, project:
             pairwise.to_excel(w, sheet_name="full masterAccount match", index=False)
             aggregated.to_excel(w, sheet_name="masterAccount match aggregated", index=False)
             client_input.to_excel(w, sheet_name="masterAccounts for client input", index=False)
+
+
+def write_client_google_sheets(pairwise: pd.DataFrame,
+                               aggregated: pd.DataFrame,
+                               client_input: pd.DataFrame,
+                               folder_id: str | None) -> None:
+    """Write results to individual Google Sheets per client.
+
+    If ``folder_id`` is ``None`` the function does nothing.  Each unique value
+    from the ``CLIENT`` column in ``aggregated`` is written to a Google Sheets
+    file inside the given Drive folder. Existing files are replaced while new
+    ones are created when necessary.
+    """
+
+    if folder_id is None:
+        return
+
+    try:
+        import gspread
+        from gspread_dataframe import set_with_dataframe
+        from googleapiclient.discovery import build
+    except Exception:
+        raise RuntimeError(
+            "Google Sheets dependencies are not installed."
+        )
+
+    client_col = "CLIENT" if "CLIENT" in aggregated.columns else "Client"
+    if client_col not in aggregated.columns:
+        return
+
+    drive = build("drive", "v3")
+    gc = gspread.oauth()
+
+    for client in aggregated[client_col].dropna().unique():
+        pw_df = pairwise[pairwise[client_col] == client]
+        agg_df = aggregated[aggregated[client_col] == client]
+        ci_df = client_input[client_input[client_col] == client]
+        file_name = f"{client} master audit"
+        query = (
+            f"name='{file_name}' and '{folder_id}' in parents "
+            "and mimeType='application/vnd.google-apps.spreadsheet' "
+            "and trashed=false"
+        )
+        resp = drive.files().list(q=query, fields="files(id)").execute()
+        files = resp.get("files", [])
+
+        if files:
+            file_id = files[0]["id"]
+            ss = gc.open_by_key(file_id)
+            for ws in ss.worksheets():
+                ss.del_worksheet(ws)
+        else:
+            metadata = {
+                "name": file_name,
+                "mimeType": "application/vnd.google-apps.spreadsheet",
+                "parents": [folder_id],
+            }
+            created = drive.files().create(body=metadata, fields="id").execute()
+            file_id = created["id"]
+            ss = gc.open_by_key(file_id)
+
+        for df, title in [
+            (pw_df, "full masterAccount match"),
+            (agg_df, "masterAccount match aggregated"),
+            (ci_df, "masterAccounts for client input"),
+        ]:
+            worksheet = ss.add_worksheet(title, rows=len(df) + 1, cols=len(df.columns) + 1)
+            set_with_dataframe(worksheet, df, include_index=False)
