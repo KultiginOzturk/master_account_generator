@@ -99,7 +99,13 @@ def write_client_google_sheets(pairwise: pd.DataFrame,
         return
 
     drive = build("drive", "v3")
-    gc = gspread.oauth()
+    # ——— Service Account auth instead of gspread.oauth() ———
+    from oauth2client.service_account import ServiceAccountCredentials
+    keyfile = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive", ]
+    creds = ServiceAccountCredentials.from_json_keyfile_name(keyfile, scopes)
+    gc = gspread.authorize(creds)
     logger.info("Writing client Google Sheets", folder_id=folder_id)
 
     for client in aggregated[client_col].dropna().unique():

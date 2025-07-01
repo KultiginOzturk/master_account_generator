@@ -40,14 +40,12 @@ def sample_pairs(indices: list[int], sample_size: int) -> list[tuple[int,int]]:
     total = n * (n - 1) // 2
     if total <= sample_size:
         pairs = list(combinations(indices, 2))
-        logger.info("All pairs used", total=len(pairs))
         return pairs
     pairs = set()
     while len(pairs) < sample_size:
         i, j = sorted(random.sample(indices, 2))
         pairs.add((i, j))
     result = list(pairs)
-    logger.info("Sampled pairs", total=len(result))
     return result
 
 def get_master_first_name(row: dict) -> str:
