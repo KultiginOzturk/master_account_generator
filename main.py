@@ -1,9 +1,9 @@
 # master_audit_generator/main.py
 import os
-from .utils        import get_master_first_name, get_master_last_name
-from .io_ops       import read_customer_table, write_sheets
-from .matching     import generate_pairwise
-from .aggregation  import aggregate_groups
+from utils import get_master_first_name, get_master_last_name
+from io_ops import read_customer_table, write_sheets
+from matching import generate_pairwise
+from aggregation import aggregate_groups
 
 def generate_master_audit():
     project = os.getenv("BQ_PROJECT", "pco-qa")
