@@ -31,7 +31,7 @@ def read_customer_table(
     query = f"SELECT * FROM `{project}.{dataset}.FR_CUSTOMER`"
     if clients:
         formatted = ",".join(f"'{c}'" for c in clients)
-        query += f" WHERE CLIENT_ID IN ({formatted})"
+        query += f" WHERE CLIENT IN ({formatted})"
 
     return client.query(query).to_dataframe()
 
