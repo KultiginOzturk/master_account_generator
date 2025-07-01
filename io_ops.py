@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 from google.cloud import bigquery
-from . import files
+import files
 
 def read_customer_table(project: str, dataset: str) -> pd.DataFrame:
     client = bigquery.Client(project=project)

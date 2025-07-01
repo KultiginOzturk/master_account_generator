@@ -1,6 +1,6 @@
 # master_audit_generator/matching.py
 import pandas as pd
-from .utils import clean_value, sample_pairs
+from utils import clean_value, sample_pairs
 
 MAX_PAIRS_PER_GROUP = 1000
 
