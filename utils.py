@@ -7,6 +7,25 @@ BLANKS = {"", "nan", "none", "null", "n/a"}
 DUMMY_PHONES = {"0", "0000000000", "n/a", "none", "null", ""}
 DUMMY_EMAILS = {"no@email.com", "n/a", "none", "null", ""}
 
+
+def is_baton(row: dict) -> bool:
+    """Return True if any name/company field contains the word 'baton'."""
+    for col in [
+        "First Name",
+        "Last Name",
+        "Company Name",
+        "Billing Company Name",
+        "Company",
+        "FNAME",
+        "LNAME",
+        "COMPANY_NAME",
+        "BILLING_COMPANY_NAME",
+    ]:
+        val = str(row.get(col, "")).lower()
+        if "baton" in val:
+            return True
+    return False
+
 def clean_value(val: any) -> str | None:
     if pd.isnull(val):
         return None
@@ -25,14 +44,30 @@ def sample_pairs(indices: list[int], sample_size: int) -> list[tuple[int,int]]:
     return list(pairs)
 
 def get_master_first_name(row: dict) -> str:
-    for key in ("BILL_TO_BILLING_FNAME", "BILLING_FNAME", "FNAME"):
+    keys = [
+        "Bill To Billing First Name",
+        "Billing First Name",
+        "First Name",
+        "BILL_TO_BILLING_FNAME",
+        "BILLING_FNAME",
+        "FNAME",
+    ]
+    for key in keys:
         v = row.get(key, "")
         if clean_value(v):
             return str(v).strip()
     return ""
 
 def get_master_last_name(row: dict) -> str:
-    for key in ("BILL_TO_BILLING_LNAME", "BILLING_LNAME", "LNAME"):
+    keys = [
+        "Bill To Billing Last Name",
+        "Billing Last Name",
+        "Last Name",
+        "BILL_TO_BILLING_LNAME",
+        "BILLING_LNAME",
+        "LNAME",
+    ]
+    for key in keys:
         v = row.get(key, "")
         if clean_value(v):
             return str(v).strip()
