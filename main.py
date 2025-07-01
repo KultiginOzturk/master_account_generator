@@ -10,7 +10,10 @@ def generate_master_audit():
     dataset = os.getenv("BQ_DATASET", "raw_layer")
     to_bq   = os.getenv("WRITE_TO_BQ", "False").lower() == "true"
 
-    df = read_customer_table(project, dataset)
+    clients_env = os.getenv("CLIENT_IDS")
+    clients = [c.strip() for c in clients_env.split(",") if c.strip()] if clients_env else None
+
+    df = read_customer_table(project, dataset, clients)
 
     # clean out Baton/dummy rows here (could be a utils function)
     # … you can factor that out too …
