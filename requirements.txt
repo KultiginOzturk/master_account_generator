@@ -2,3 +2,6 @@ pandas
 pandas-gbq
 google-cloud-bigquery
 openpyxl
+gspread
+gspread_dataframe
+google-api-python-client

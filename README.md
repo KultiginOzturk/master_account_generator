@@ -13,6 +13,7 @@ variables:
 - `BQ_DATASET` – dataset containing `FR_CUSTOMER` (default `raw_layer`)
 - `WRITE_TO_BQ` – set to `True` to upload the results to BigQuery
 - `CLIENT_IDS` – comma separated list of client IDs to filter on (optional)
+- `DRIVE_FOLDER_ID` – Google Drive folder to store per-client Sheets (optional)
 
 Run the tool:
 
@@ -30,6 +31,10 @@ Install dependencies using pip:
 ```bash
 pip install -r requirements.txt
 ```
+
+Google Sheets export requires additional credentials for ``gspread`` to
+authenticate. Ensure a service account JSON file is available and configured as
+described in the `gspread` documentation.
 
 ## Output
 
