@@ -1,5 +1,4 @@
 # master_audit_generator/aggregation.py
-from itertools import groupby
 import pandas as pd
 
 class UnionFind:
@@ -49,45 +48,72 @@ def aggregate_groups(df_pairwise: pd.DataFrame, original_df: pd.DataFrame, get_n
         ``(aggregated, client_input)`` data frames.
     """
 
-    id_list = original_df["CUSTOMER_ID"].tolist()
-    index_by_id = {cid: idx for idx, cid in enumerate(id_list)}
+    cid_col = "Customer ID" if "Customer ID" in original_df.columns else "CUSTOMER_ID"
 
-    uf = UnionFind(len(id_list))
+    all_ids = set(df_pairwise[cid_col]) | set(df_pairwise["master account id"])
+    all_ids = list(all_ids)
+    index_by_id = {cid: idx for idx, cid in enumerate(all_ids)}
+
+    uf = UnionFind(len(all_ids))
+
+    # store original data
+    cid_to_data = {}
+    for _, row in original_df.iterrows():
+        cid = row[cid_col]
+        cid_to_data.setdefault(cid, row.to_dict())
 
     for _, row in df_pairwise.iterrows():
-        cid_idx = index_by_id.get(row["CUSTOMER_ID"])
+        cid_idx = index_by_id.get(row[cid_col])
         mid_idx = index_by_id.get(row["master account id"])
         if cid_idx is None or mid_idx is None:
             continue
-        reason = row.get("Reason")
-        if cid_idx == mid_idx:
-            uf.add_reason(cid_idx, reason)
-        else:
-            uf.union(cid_idx, mid_idx, reason)
+        uf.union(cid_idx, mid_idx, row["Reason"])
 
-    clusters: dict[int, list[int]] = {}
-    for idx, cid in enumerate(id_list):
+    groups: dict[int, list[int]] = {}
+    for cid, idx in index_by_id.items():
         root = uf.find(idx)
-        clusters.setdefault(root, []).append(idx)
+        groups.setdefault(root, []).append(cid)
 
     aggregated_rows = []
-    for root_idx, members in clusters.items():
-        reasons = "; ".join(sorted(uf.reasons[root_idx]))
-        root_row = original_df.iloc[root_idx].to_dict()
-        first = get_name_fn[0](root_row)
-        last = get_name_fn[1](root_row)
+    group_id_to_reasonset = {}
+    for root_idx, cids_in_group in groups.items():
+        if len(cids_in_group) < 2:
+            continue
+        reasons = uf.reasons[root_idx]
+        reason_str = ", ".join(sorted(reasons))
+        group_id = min(cids_in_group)
+        rep_data = cid_to_data.get(group_id, {})
+        first = get_name_fn[0](rep_data)
+        last = get_name_fn[1](rep_data)
         master_name = f"{first} {last}".strip()
-        group_id = id_list[root_idx]
-
-        for member_idx in members:
-            row = original_df.iloc[member_idx].to_dict()
-            row.update({
+        group_id_to_reasonset[group_id] = reasons
+        for cid in cids_in_group:
+            row = cid_to_data.get(cid, {})
+            row_copy = dict(row)
+            row_copy.update({
                 "Group ID": group_id,
-                "Group Reasons": reasons,
-                "master name": master_name,
+                "Group Reasons": reason_str,
+                "master account full name": master_name,
             })
-            aggregated_rows.append(row)
+            aggregated_rows.append(row_copy)
 
-    aggregated = pd.DataFrame(aggregated_rows)
-    client_input = aggregated[aggregated["CUSTOMER_ID"] == aggregated["Group ID"]].copy()
+    aggregated = pd.DataFrame(aggregated_rows).sort_values(["Group ID", cid_col])
+
+    client_rows = []
+    seen = set()
+    for _, row in aggregated.iterrows():
+        cid = row[cid_col]
+        if cid in seen:
+            continue
+        seen.add(cid)
+        gid = row["Group ID"]
+        reasons = group_id_to_reasonset.get(gid, set())
+        if {"linked_property", "bill to customer id match"} & reasons:
+            continue
+        remaining = reasons - {"linked_property", "bill to customer id match"}
+        if len(remaining) >= 2:
+            continue
+        client_rows.append(dict(row))
+
+    client_input = pd.DataFrame(client_rows).sort_values(["Group ID", cid_col])
     return aggregated, client_input
