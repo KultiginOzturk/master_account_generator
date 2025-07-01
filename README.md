@@ -15,6 +15,9 @@ variables:
 - `CLIENT_IDS` – comma separated list of client IDs to filter on (optional)
 - `DRIVE_FOLDER_ID` – Google Drive folder to store per-client Sheets (optional)
 
+When `CLIENT_IDS` is not provided, the tool retrieves all distinct clients from
+`FR_CUSTOMER` and processes them one by one.
+
 Run the tool:
 
 ```bash

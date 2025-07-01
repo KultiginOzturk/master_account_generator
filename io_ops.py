@@ -17,6 +17,19 @@ def remove_timezones(df: pd.DataFrame) -> pd.DataFrame:
         df[col] = df[col].dt.tz_localize(None)
     return df
 
+
+def list_clients(project: str, dataset: str) -> list[str]:
+    """Return all distinct client IDs from ``FR_CUSTOMER``."""
+    client = bigquery.Client(project=project)
+    query = (
+        f"SELECT DISTINCT CLIENT FROM `{project}.{dataset}.FR_CUSTOMER` "
+        "WHERE CLIENT IS NOT NULL ORDER BY CLIENT"
+    )
+    logger.info("Fetching list of clients", query=query)
+    df = client.query(query).to_dataframe()
+    col = "CLIENT" if "CLIENT" in df.columns else "Client"
+    return sorted(df[col].dropna().astype(str).tolist())
+
 def read_customer_table(
     project: str,
     dataset: str,
