@@ -4,9 +4,35 @@ import pandas as pd
 from google.cloud import bigquery
 import files
 
-def read_customer_table(project: str, dataset: str) -> pd.DataFrame:
+def read_customer_table(
+    project: str,
+    dataset: str,
+    clients: list[str] | None = None,
+) -> pd.DataFrame:
+    """Load the ``FR_CUSTOMER`` table from BigQuery.
+
+    Parameters
+    ----------
+    project : str
+        BigQuery project ID.
+    dataset : str
+        Dataset containing ``FR_CUSTOMER``.
+    clients : list[str] | None, optional
+        Optional list of client IDs to limit the query to.
+
+    Returns
+    -------
+    pd.DataFrame
+        Customer table as a DataFrame.
+    """
+
     client = bigquery.Client(project=project)
+
     query = f"SELECT * FROM `{project}.{dataset}.FR_CUSTOMER`"
+    if clients:
+        formatted = ",".join(f"'{c}'" for c in clients)
+        query += f" WHERE CLIENT_ID IN ({formatted})"
+
     return client.query(query).to_dataframe()
 
 def write_sheets(pairwise, aggregated, client_input, to_bigquery: bool, project: str):
