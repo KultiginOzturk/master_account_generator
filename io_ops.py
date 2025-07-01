@@ -3,11 +3,16 @@ import os
 import pandas as pd
 from google.cloud import bigquery
 import files
+from logger import DQLogger
+
+logger = DQLogger(__name__)
 
 
 def remove_timezones(df: pd.DataFrame) -> pd.DataFrame:
     """Remove timezone information from datetime columns."""
     tz_cols = df.select_dtypes(include=["datetimetz"]).columns
+    if len(tz_cols) > 0:
+        logger.info("Removing timezone info", columns=list(tz_cols))
     for col in tz_cols:
         df[col] = df[col].dt.tz_localize(None)
     return df
@@ -41,14 +46,19 @@ def read_customer_table(
         formatted = ",".join(f"'{c}'" for c in clients)
         query += f" WHERE CLIENT IN ({formatted})"
 
-    return client.query(query).to_dataframe()
+    logger.info("Executing customer query", query=query)
+    df = client.query(query).to_dataframe()
+    logger.info("Loaded customers", rows=len(df))
+    return df
 
 def write_sheets(pairwise, aggregated, client_input, to_bigquery: bool, project: str):
     if to_bigquery:
+        logger.info("Writing results to BigQuery")
         pairwise.to_gbq("master_audit.pairwise", project_id=project, if_exists="replace")
         aggregated.to_gbq("master_audit.aggregated", project_id=project, if_exists="replace")
         client_input.to_gbq("master_audit.client_input", project_id=project, if_exists="replace")
     else:
+        logger.info("Writing results locally", file=str(files.MASTER_AUDIT))
         pairwise = remove_timezones(pairwise.copy())
         aggregated = remove_timezones(aggregated.copy())
         client_input = remove_timezones(client_input.copy())
@@ -72,6 +82,7 @@ def write_client_google_sheets(pairwise: pd.DataFrame,
     """
 
     if folder_id is None:
+        logger.info("No Drive folder id provided; skipping Google Sheets output")
         return
 
     try:
@@ -89,8 +100,10 @@ def write_client_google_sheets(pairwise: pd.DataFrame,
 
     drive = build("drive", "v3")
     gc = gspread.oauth()
+    logger.info("Writing client Google Sheets", folder_id=folder_id)
 
     for client in aggregated[client_col].dropna().unique():
+        logger.info("Processing client", client=client)
         pw_df = pairwise[pairwise[client_col] == client]
         agg_df = aggregated[aggregated[client_col] == client]
         ci_df = client_input[client_input[client_col] == client]

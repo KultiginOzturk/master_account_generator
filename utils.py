@@ -2,6 +2,9 @@
 import pandas as pd
 import random
 from itertools import combinations
+from logger import DQLogger
+
+logger = DQLogger(__name__)
 
 BLANKS = {"", "nan", "none", "null", "n/a"}
 DUMMY_PHONES = {"0", "0000000000", "n/a", "none", "null", ""}
@@ -36,12 +39,16 @@ def sample_pairs(indices: list[int], sample_size: int) -> list[tuple[int,int]]:
     n = len(indices)
     total = n * (n - 1) // 2
     if total <= sample_size:
-        return list(combinations(indices, 2))
+        pairs = list(combinations(indices, 2))
+        logger.info("All pairs used", total=len(pairs))
+        return pairs
     pairs = set()
     while len(pairs) < sample_size:
         i, j = sorted(random.sample(indices, 2))
         pairs.add((i, j))
-    return list(pairs)
+    result = list(pairs)
+    logger.info("Sampled pairs", total=len(result))
+    return result
 
 def get_master_first_name(row: dict) -> str:
     keys = [
