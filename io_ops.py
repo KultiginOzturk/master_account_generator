@@ -148,8 +148,18 @@ def write_client_google_sheets(pairwise: pd.DataFrame,
         if files:
             file_id = files[0]["id"]
             ss = gc.open_by_key(file_id)
-            for ws in ss.worksheets():
-                ss.del_worksheet(ws)
+            worksheets = ss.worksheets()
+
+            # Google Sheets does not allow deleting the last remaining sheet in a
+            # spreadsheet.  We therefore keep one sheet until the new sheets are
+            # created and remove it afterwards.
+            temp_ws = None
+            if worksheets:
+                temp_ws = worksheets[0]
+                for ws in worksheets[1:]:
+                    ss.del_worksheet(ws)
+                temp_ws.clear()
+                temp_ws.update_title("temp")
         else:
             metadata = {
                 "name": file_name,
@@ -159,6 +169,7 @@ def write_client_google_sheets(pairwise: pd.DataFrame,
             created = drive.files().create(body=metadata, fields="id").execute()
             file_id = created["id"]
             ss = gc.open_by_key(file_id)
+            temp_ws = None
 
         for df, title in [
             (pw_df, "full masterAccount match"),
@@ -167,3 +178,6 @@ def write_client_google_sheets(pairwise: pd.DataFrame,
         ]:
             worksheet = ss.add_worksheet(title, rows=len(df) + 1, cols=len(df.columns) + 1)
             set_with_dataframe(worksheet, df, include_index=False)
+
+        if temp_ws is not None:
+            ss.del_worksheet(temp_ws)
