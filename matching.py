@@ -1,3 +1,12 @@
+"""Pairwise matching logic.
+
+Builds pairwise match records by:
+- Cleaning dummy phones/emails and skipping `baton` rows
+- Unifying key fields (email, company, phone, bill-to)
+- Emitting sampled pairs per key with a reason and master id
+
+Output feeds aggregation and Excel/BigQuery sheets.
+"""
 # master_audit_generator/matching.py
 import pandas as pd
 import numpy as np

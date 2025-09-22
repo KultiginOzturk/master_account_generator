@@ -1,3 +1,8 @@
+"""Lightweight structured logger wrapper.
+
+Sets up a basic logging configuration (if none exists) and exposes
+`info`, `warning`, and `error` methods that accept extra key/value data.
+"""
 import logging
 from typing import Any, Dict
 

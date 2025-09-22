@@ -1,3 +1,12 @@
+"""Aggregation of pairwise matches into master-account groups.
+
+Uses a union-find to connect related customer IDs and annotates groups with:
+- Group ID (min customer id)
+- Group Reasons (consolidated reasons)
+- master account full name (derived via utils)
+
+Also builds a client review subset with conservative filter rules.
+"""
 # master_audit_generator/aggregation.py
 import pandas as pd
 from logger import DQLogger

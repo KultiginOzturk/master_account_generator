@@ -1,3 +1,18 @@
+"""Master Account Generator entrypoint.
+
+Orchestrates the end-to-end flow:
+- Read `FR_CUSTOMER` from BigQuery (optionally by CLIENT)
+- Generate pairwise matches (email/company/phone/bill-to/linked)
+- Aggregate into master-account groups and derive client review subset
+- Write outputs to Excel or BigQuery; optionally create per-client Google Sheets
+
+Environment variables:
+- BQ_PROJECT, BQ_DATASET, WRITE_TO_BQ, CLIENT_IDS, DRIVE_FOLDER_ID,
+  GOOGLE_APPLICATION_CREDENTIALS
+
+Run:
+    python main.py
+"""
 # master_audit_generator/main.py
 import os
 import pandas as pd

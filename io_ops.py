@@ -1,3 +1,13 @@
+"""I/O operations for the Master Account Generator.
+
+Responsibilities:
+- Query `FR_CUSTOMER` from BigQuery (optionally filter by CLIENT)
+- List distinct CLIENTs
+- Write outputs to Excel or BigQuery
+- Optionally create per-client Google Sheets in a Drive folder
+
+Requires `GOOGLE_APPLICATION_CREDENTIALS` for GCP access.
+"""
 # master_audit_generator/io_ops.py
 import os
 import pandas as pd

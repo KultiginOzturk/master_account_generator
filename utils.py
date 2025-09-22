@@ -1,3 +1,10 @@
+"""Utility helpers for normalization and display values.
+
+Includes:
+- Baton record detection
+- Value cleaning and sampling of index pairs
+- Functions to derive master first/last name for group display
+"""
 # master_audit_generator/utils.py
 import pandas as pd
 import random

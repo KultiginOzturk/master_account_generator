@@ -1,3 +1,9 @@
+"""Path constants for local file inputs/outputs.
+
+Defines:
+- MASTER_AUDIT: Excel output path for consolidated sheets
+- CUSTOMERS / LINKED_PROPERTIES: optional local sources (not used by default)
+"""
 """Constants for output file paths."""
 from pathlib import Path
 
